@@ -1,0 +1,10 @@
+.terraform
+.terraform/*
+terraform.tfstate
+*.tfstate*
+terraform.tfvars
+*.backup
+*.plan
+plans/*
+LICENSE
+terraform-docs.tgz

@@ -1,0 +1,56 @@
+version: 3
+automerge: true
+# PROJECTS
+projects:
+# LOWER ENVIRONMENT PROJECTS - {PROJECT_NAME}
+- name: dev_<%= stack %>
+  dir: .
+  autoplan:
+    when_modified: ["./parameters/dev-<%= stack %>.tfvars"]
+    enabled: true
+  apply_requirements: [mergeable]
+  workflow: custom-workflow
+- name: qa_<%= stack %>
+  dir: .
+  autoplan:
+    when_modified: ["./parameters/qa-<%= stack %>.tfvars"]
+    enabled: true
+  apply_requirements: [mergeable]
+  workflow: custom-workflow
+- name: sit_<%= stack %>
+  dir: .
+  autoplan:
+    when_modified: ["./parameters/sit-<%= stack %>.tfvars"]
+    enabled: true
+  apply_requirements: [mergeable]
+  workflow: custom-workflow
+# UPPER ENVIRONMENT PROJECTS - EXTERNAL ASM
+- name: uat_<%= stack %>
+  dir: .
+  autoplan:
+    when_modified: ["./parameters/uat-<%= stack %>.tfvars"]
+    enabled: true
+  apply_requirements: [mergeable, approved]
+  workflow: custom-workflow
+- name: prod_<%= stack %>
+  dir: .
+  autoplan:
+    when_modified: ["./parameters/prod-<%= stack %>.tfvars"]
+    enabled: true
+  apply_requirements: [mergeable, approved]
+  workflow: custom-workflow
+
+
+# WORKFLOWS
+workflows:
+  custom-workflow:
+    plan:
+      steps:
+      - run: rm -rf .terraform
+      - run: ./scripts/prep-tf-env.sh
+      - init:
+          extra_args: ["-backend=true", "-backend-config=./backend", "-backend-config=./backend-key"]
+      - plan:
+          extra_args: ["-var-file=./env.tfvars", "-var-file=./stack.tfvars", "-lock=true"]
+
+    
