@@ -2,7 +2,6 @@
 var Generator = require('yeoman-generator');
 const { exec } = require('child_process');
 var os = require('os');
-var backend_client;
 
 module.exports = class extends Generator {
   constructor(args, opts) {
@@ -29,43 +28,44 @@ module.exports = class extends Generator {
       {
         type: "input",
         name: "name",
-        message: "Your first and last name",
+        message: "Your first and last name:",
         store: true
       },
       {
         type: "input",
-        name: "nanager",
-        message: "Your Manager's name",
+        name: "manager",
+        message: "Your Manager's name:",
         store: true
       },
       {
         type: "input",
-        name: "narket",
-        message: "Your market",
+        name: "market",
+        message: "Your market:",
+        default: "Boston Build",
         store: true
       },
       {
         type: "input",
         name: "project",
-        message: "The name of this project",
+        message: "The name of this project (no spaces - e.g. cloud_project):",
         store: true
       },
       {
         type: "input",
         name: "program",
-        message: "The name of the program to which this project belongs",
+        message: "The name of the program to which this project belongs (no spaces - e.g. slalom_cloud):",
+        store: true
+      },
+      {
+        type: "input",
+        name: "client",
+        message: "Name of client/customer:",
         store: true
       },
       {
         type: "input",
         name: "owner",
         message: "Who owns the resources created by this stack?",
-        store: true
-      },
-      {
-        type: "input",
-        name: "client",
-        message: "Name of client/customer",
         store: true
       },
       {
@@ -77,20 +77,6 @@ module.exports = class extends Generator {
         type: "confirm",
         name: "gitflow",
         message: "Would you like to use git flow as a branching strategy?"
-      },
-      {
-        type: 'list',
-        name: 'cloud',
-        message: 'Select Cloud Provider:',
-        choices: [
-          {
-            name: 'Azure',
-            value: 'azure',
-          }, {
-            name: 'AWS',
-            value: 'aws'
-          }
-        ]
       },
       {
         type: 'checkbox',
@@ -119,13 +105,27 @@ module.exports = class extends Generator {
     
         ],
         store: true
+      },
+      {
+        type: 'list',
+        name: 'cloud',
+        message: 'Select Cloud Provider:',
+        choices: [
+          {
+            name: 'Azure',
+            value: 'azurerm',
+          }, {
+            name: 'AWS',
+            value: 'aws'
+          }
+        ]
       }
       
     ]);
 
     this.backend_client = this.answers.client.toLowerCase();
 
-    if (this.answers.cloud === "azure") {
+    if (this.answers.cloud === "azurerm") {
       this.answers2 = await this.prompt([
         {
           type: 'list',
@@ -169,16 +169,16 @@ module.exports = class extends Generator {
           message: 'Select default AWS Region:',
           choices: [
             {
-              name: 'US East (Ohio)',
+              name: 'US East 2 (Ohio)',
               value: 'us-east-2',
             }, {
-              name: 'US East (N. Virginia)',
+              name: 'US East 1 (N. Virginia)',
               value: 'us-east-1'
             }, {
-              name: 'US West (N. California)',
+              name: 'US West 1 (N. California)',
               value: 'us-west-1'
             }, {
-              name: 'US West (Oregon)',
+              name: 'US West 2 (Oregon)',
               value: 'us-west-2'
             }, {
               name: 'Canada (Central)',
@@ -197,12 +197,15 @@ module.exports = class extends Generator {
 
     var tf_backend;
     var cloud_provider_version;
+    var backend_template;
     if (this.answers.cloud === "azurerm") {
-      cloud_provider_version = "~> 2.50"
+      backend_template = "backends/azurerm-backend",
+      cloud_provider_version = "2.50"
       tf_backend =  this.answers.cloud
     }
     if (this.answers.cloud === "aws") {
-      cloud_provider_version = "~> 3.0"
+      backend_template = "backends/aws-backend",
+      cloud_provider_version = "3.0"
       tf_backend =  "s3"
     }
 
@@ -212,6 +215,7 @@ module.exports = class extends Generator {
       this.destinationPath('main.tf'),
       {
         cloud_provider: this.answers.cloud,
+        cloud_provider_version: unescape(cloud_provider_version),
         tf_backend: tf_backend
       }
     );
@@ -235,9 +239,12 @@ module.exports = class extends Generator {
     );
 
     // ATLANTIS PROJECT & WORKFLOW CONFIGURATION
-    this.fs.copy(
+    this.fs.copyTpl(
       this.templatePath('atlantis.yaml'),
-      this.destinationPath('atlantis.yaml')
+      this.destinationPath('atlantis.yaml'),
+      {
+        stack: this.answers.stack
+      }
     );
 
     this.fs.copy(
@@ -294,25 +301,28 @@ module.exports = class extends Generator {
       );
 
       // TERRAFORM BACKENDS
-      var backend_env;
+      var backend_env = [];
+      var i;
       if (['dev', 'qa', 'sit'].includes(env)) {
-        backend_env = "lower"
-      }
+        backend_env.push("lower")
+      };
       if (['uat', 'prod'].includes(env)) {
-        backend_env = "upper"
+        backend_env.push("upper")
+      };
+      for (i = 0; i < backend_env.length; i++) {
+        this.fs.copyTpl(
+          this.templatePath(backend_template),
+          this.destinationPath('backends/<%= env %>-backend'),
+          { 
+            cloud: this.answers.cloud,
+            env: env,
+            client: this.answers.client.toLowerCase(),
+            program: this.answers.program.toLowerCase(),
+            backend_env: backend_env[i],
+            backend_region: this.answers2.region
+          }
+        )
       }
-      this.fs.copyTpl(
-        this.templatePath('backends/<%= cloud %>-backend'),
-        this.destinationPath('backends/<%= env %>-backend'),
-        { 
-          cloud: this.answers.cloud,
-          env: env,
-          company: this.answers.company.toLowerCase(),
-          program: this.answers.program.toLowerCase(),
-          backend_env: backend_env,
-          region: this.answers2.region
-        }
-      )
 
     }
   }
@@ -331,6 +341,7 @@ module.exports = class extends Generator {
       this.spawnCommandSync("git", ["init"])      
     }
     this.spawnCommandSync("git", ["add", "."])   
+    this.spawnCommandSync("git", ["commit", "-am", "First Commit"])   
     if (this.answers.precommit) {
       this.log("\n\n*** INSTALLING PRE-COMMIT TOOLS ***")
       if (os.platform() === "linux" ) { 

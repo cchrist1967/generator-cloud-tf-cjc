@@ -1,13 +1,13 @@
 # PROVIDERS
-provider "azurerm" {
+provider "<%= cloud_provider %>" {
   features {}
-  version = "~> 2.50"
+  version = "~> <%= cloud_provider_version %>"
 }
 
 # TERRAFORM CONFIG
 terraform {
   required_version = "=0.12.30"
-  backend "azurerm" {}
+  backend "<%= tf_backend %>" {}
 }
 
 # RESOURCES

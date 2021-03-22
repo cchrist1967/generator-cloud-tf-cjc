@@ -1,3 +1,2 @@
-resource_group_name  = "cjc-dev-tf-backend"
-storage_account_name = "cjcdevtfbackend"
-container_name       = "cjc-dev-tf-state"
+bucket  = "<%= client %>-<%= program %>-<%= backend_region %>-<%= backend_env %>-envs-tf-backend"
+region = "<%= backend_region %>"
