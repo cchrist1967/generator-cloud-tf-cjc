@@ -74,8 +74,8 @@ project
 <ol>
 <li> mkdir <your_project_directory>
 <li> cd <your_project_directory>
-<li> npm install -g generator_cloud_tf_cjc
-<li> yo generator_cloud_tf_cjc
+<li> npm install -g generator-cloud-tf-cjc
+<li> yo cloud-tf-cjc
 </ol>
 
 ## Development
