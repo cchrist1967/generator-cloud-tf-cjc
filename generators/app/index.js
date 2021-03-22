@@ -13,6 +13,8 @@ module.exports = class extends Generator {
   async prompting() {
     this.log("OS: ", os.platform(), " ", os.type(), " ", os.release())
     this.answers = await this.prompt([
+
+      // CLOUD RESOURCE TAGS & PROJECT CONFIGURATION
       {
         type: "input",
         name: "stack",
@@ -68,16 +70,25 @@ module.exports = class extends Generator {
         message: "Who owns the resources created by this stack?",
         store: true
       },
+
+      // OPTIONAL TOOLS/CONFIGURATION
       {
         type: "confirm",
         name: "precommit",
-        message: "Would you like to install the pre-commit checks?"
+        message: "Would you like to install/reinstall the pre-commit checks? (n will skip but not unistall)"
       },
       {
         type: "confirm",
         name: "gitflow",
-        message: "Would you like to use git flow as a branching strategy?"
+        message: "Would you like to configure/reconfigure git flow as a branching strategy? (n will skip but not unconfigure)"
       },
+      {
+        type: "confirm",
+        name: "atlantis",
+        message: "Would you like Atlantis workflow configured/reconfigured for this project? (n will skip but not unconfigure)"
+      },
+
+      // SUPPORTED ENVIRONMENT SELECTION
       {
         type: 'checkbox',
         name: 'environments',
@@ -106,6 +117,8 @@ module.exports = class extends Generator {
         ],
         store: true
       },
+
+      // CLOUD PROVIDER SELECTION
       {
         type: 'list',
         name: 'cloud',
@@ -125,6 +138,7 @@ module.exports = class extends Generator {
 
     this.backend_client = this.answers.client.toLowerCase();
 
+    // DEFAULT CLOUD REGION SELECTION
     if (this.answers.cloud === "azurerm") {
       this.answers2 = await this.prompt([
         {
@@ -195,6 +209,7 @@ module.exports = class extends Generator {
 
   writing() {
 
+    // CLOUD PROVIDER CONFIGURATION
     var tf_backend;
     var cloud_provider_version;
     var backend_template;
@@ -239,19 +254,19 @@ module.exports = class extends Generator {
     );
 
     // ATLANTIS PROJECT & WORKFLOW CONFIGURATION
-    this.fs.copyTpl(
-      this.templatePath('atlantis.yaml'),
-      this.destinationPath('atlantis.yaml'),
-      {
-        stack: this.answers.stack
-      }
-    );
-
-    this.fs.copy(
-      this.templatePath('scripts'),
-      this.destinationPath('scripts')
-    );
-
+    if (this.answers.atlantis) {
+      this.fs.copyTpl(
+        this.templatePath('atlantis.yaml'),
+        this.destinationPath('atlantis.yaml'),
+        {
+          stack: this.answers.stack
+        }
+      );
+      this.fs.copy(
+        this.templatePath('scripts'),
+        this.destinationPath('scripts')
+      );
+    };
 
     // REPO CONFIG
     this.fs.copy(
@@ -270,7 +285,7 @@ module.exports = class extends Generator {
         this.templatePath('.pre-commit-config.yaml'),
         this.destinationPath('.pre-commit-config.yaml')
       )
-    }
+    };
 
     for (var env of this.answers.environments) {
       // TERRAFORM PARAMETERS
