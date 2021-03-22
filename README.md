@@ -1,3 +1,4 @@
+# Yeoman Generator - Cloud Terraform Scaffolding
 ## Overview
 
 This Yeoman generator creates Terraform project scaffolding a cloud project 
@@ -6,11 +7,28 @@ This Yeoman generator creates Terraform project scaffolding a cloud project
 - Azure
 - AWS
 
-### Optionall installs the following
+### Actions taken by the generator
+
+#### Prompting
+- Asks for values used for common cloud resource tags
+- Asks what environments will be supported
+    - choices include dev, prod, qa, sit, uat
+- Asks for target cloud provider
+- Asks for target cloud provider region
+
+#### Writing
+- Creates Cloud Backend Configuration Files (opinionated backend naming convention)
+- Creates Parameter Files
+- Creates Skeleton Terraform main, vatiables, and output files
+
+#### Installing
+- initializes the local git repo (with either git or git flow)
+
+#### Optionally installs the following
 - python3-pip
 - terraform 0.12.30
 
-### Optionally configures the following
+#### Optionally configures the following
 - Git Flow
 - Atlantis Workflow
 - Pre-Commit Hooks for Terraform
@@ -49,52 +67,35 @@ project
 |   main.tf
 |   README.md
 |   variables.tf
-|   README.md
 ```
 
 ## Usage
 
-```
-terraform plan && terraform apply
-```
-
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+<ol>
+<li> mkdir <your_project_directory>
+<li> cd <your_project_directory>
+<li> npm install -g generator_cloud_tf_cjc
+<li> yo generator_cloud_tf_cjc
+</ol>
 
 ## Development
+- TBD
 
 ### Prerequisites
 
-- [terraform](https://learn.hashicorp.com/terraform/getting-started/install#installing-terraform)
-- [terraform-docs](https://github.com/segmentio/terraform-docs)
-- [pre-commit](https://pre-commit.com/#install)
-- [golang](https://golang.org/doc/install#install)
-- [golint](https://github.com/golang/lint#installation)
+- npm installed
+- Yeoman installed
+- Before the generated terraform project is initialized, backend storage must exist that matches the naming convention used in the backend config files
 
 ### Configurations
 
-- Configure pre-commit hooks
-```sh
-pre-commit install
-```
-
-
-- Configure golang deps for tests
-```sh
-> go get github.com/gruntwork-io/terratest/modules/terraform
-> go get github.com/stretchr/testify/assert
-```
+- TBD
 
 
 
 ### Tests
 
-- Tests are available in `test` directory
-
-- In the test directory, run the below command
-```sh
-go test
-```
+- TBD
 
 
 
