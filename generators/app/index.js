@@ -1,7 +1,9 @@
 'use strict';
 var Generator = require('yeoman-generator');
 const { exec } = require('child_process');
-var os = require('os');
+const os = require('os');
+const chalk = require("chalk");
+const yosay = require("yosay");
 
 module.exports = class extends Generator {
   constructor(args, opts) {
@@ -11,10 +13,18 @@ module.exports = class extends Generator {
   }
 
   async prompting() {
-    this.log("OS: ", os.platform(), " ", os.type(), " ", os.release())
-    this.answers = await this.prompt([
+    this.log(
+      yosay(
+        `Welcome to the ${chalk.red(
+          "generator-cloud-tf-cjc"
+        )} generator!`
+      )
+    );
 
-      // CLOUD RESOURCE TAGS & PROJECT CONFIGURATION
+    this.log(`Your Operating System: ${chalk.blue(os.platform(), os.type(), os.release())}`);
+
+    // PROJECT QUESTIONS
+    const project_questions = [
       {
         type: "input",
         name: "stack",
@@ -23,10 +33,156 @@ module.exports = class extends Generator {
       },
       {
         type: "input",
-        name: "overview",
+        name: "description",
         message: "Please provide a description of this project stack.",
         store: true
       },
+      {
+        type: "input",
+        name: "project",
+        message: "The name of this project (no spaces - e.g. cloud-project):",
+        store: true
+      },
+      {
+        type: "input",
+        name: "program",
+        message: "The name of the program to which this project belongs (no spaces - e.g. slalom-cloud):",
+        store: true
+      }
+    ]
+
+    // ENVIRONMENT QUESTIONS
+    const env_questions = [
+      {
+        type: 'checkbox',
+        name: 'environments',
+        message: 'Select all environments you want to support:',
+        choices: [
+          {
+            name: 'dev',
+            value: 'dev',
+            checked: true
+          }, {
+            name: 'qa',
+            value: 'qa'
+          }, {
+            name: 'sit',
+            value: 'sit'
+          }, {
+            name: 'uat',
+            value: 'uat'
+          }, {
+            name: 'prod',
+            value: 'prod',
+            checked: true
+          }
+        ],
+        store: true
+      }
+    ]
+
+    // CLOUD PROVIDER SELECTION
+    const cloud_questions = [
+      {
+        type: 'list',
+        name: 'cloud',
+        message: 'Select Cloud Provider:',
+        choices: [
+          {
+            name: 'Azure',
+            value: 'azurerm',
+          }, {
+            name: 'AWS',
+            value: 'aws'
+          }
+        ]
+      }
+    ]
+
+    const aws_questions = [
+      {
+        type: 'list',
+        name: 'region',
+        message: 'Select default AWS Region:',
+        choices: [
+          {
+            name: 'US East 2 (Ohio)',
+            value: 'us-east-2',
+          }, {
+            name: 'US East 1 (N. Virginia)',
+            value: 'us-east-1'
+          }, {
+            name: 'US West 1 (N. California)',
+            value: 'us-west-1'
+          }, {
+            name: 'US West 2 (Oregon)',
+            value: 'us-west-2'
+          }, {
+            name: 'Canada (Central)',
+            value: 'ca-central-1'
+          }
+        ],
+        store: true
+      }      
+    ]
+
+    const azurerm_questions = [
+      {
+        type: 'list',
+        name: 'region',
+        message: 'Select default Azure Region:',
+        choices: [
+          {
+            name: 'Central US',
+            value: 'Central US',
+          }, {
+            name: 'East US',
+            value: 'East US'
+          }, {
+            name: 'East US 2',
+            value: 'East US 2'
+          }, {
+            name: 'North Central US',
+            value: 'North Central US'
+          }, {
+            name: 'South Central US',
+            value: 'South Central US'
+          }, {
+            name: 'West Central US',
+            value: 'West Central US'
+          }, {
+            name: 'WEST US',
+            value: 'WEST US'
+          }, {
+            name: 'WEST US 2',
+            value: 'WEST US 2'
+          }
+        ],
+        store: true
+      }      
+    ]
+
+    // TOOLS/CONFIGURATION QUESTIONS
+    const tool_questions = [
+      {
+        type: "confirm",
+        name: "precommit",
+        message: "Would you like to install/reinstall the pre-commit checks? (n will skip but not unistall)"
+      },
+      {
+        type: "confirm",
+        name: "gitflow",
+        message: "Would you like to configure/reconfigure git flow as a branching strategy? (n will skip but not unconfigure)"
+      },
+      {
+        type: "confirm",
+        name: "atlantis",
+        message: "Would you like Atlantis workflow configured/reconfigured for this project? (n will skip but not unconfigure)"
+      }
+    ]
+
+    // TAGGING QUESTIONS
+    const tag_questions = [
       {
         type: "input",
         name: "name",
@@ -48,18 +204,6 @@ module.exports = class extends Generator {
       },
       {
         type: "input",
-        name: "project",
-        message: "The name of this project (no spaces - e.g. cloud_project):",
-        store: true
-      },
-      {
-        type: "input",
-        name: "program",
-        message: "The name of the program to which this project belongs (no spaces - e.g. slalom_cloud):",
-        store: true
-      },
-      {
-        type: "input",
         name: "client",
         message: "Name of client/customer:",
         store: true
@@ -69,143 +213,38 @@ module.exports = class extends Generator {
         name: "owner",
         message: "Who owns the resources created by this stack?",
         store: true
-      },
-
-      // OPTIONAL TOOLS/CONFIGURATION
-      {
-        type: "confirm",
-        name: "precommit",
-        message: "Would you like to install/reinstall the pre-commit checks? (n will skip but not unistall)"
-      },
-      {
-        type: "confirm",
-        name: "gitflow",
-        message: "Would you like to configure/reconfigure git flow as a branching strategy? (n will skip but not unconfigure)"
-      },
-      {
-        type: "confirm",
-        name: "atlantis",
-        message: "Would you like Atlantis workflow configured/reconfigured for this project? (n will skip but not unconfigure)"
-      },
-
-      // SUPPORTED ENVIRONMENT SELECTION
-      {
-        type: 'checkbox',
-        name: 'environments',
-        message: 'Select all environments you want to support:',
-        choices: [
-          {
-            name: 'dev',
-            value: 'dev',
-            checked: true
-          }, {
-            name: 'qa',
-            value: 'qa'
-
-          }, {
-            name: 'sit',
-            value: 'sit'
-          }, {
-            name: 'uat',
-            value: 'uat'
-          }, {
-            name: 'prod',
-            value: 'prod',
-            checked: true
-          }
-    
-        ],
-        store: true
-      },
-
-      // CLOUD PROVIDER SELECTION
-      {
-        type: 'list',
-        name: 'cloud',
-        message: 'Select Cloud Provider:',
-        choices: [
-          {
-            name: 'Azure',
-            value: 'azurerm',
-          }, {
-            name: 'AWS',
-            value: 'aws'
-          }
-        ]
       }
-      
-    ]);
+    ]
 
-    this.backend_client = this.answers.client.toLowerCase();
+    // ASK PROJECT QUESTIONS
+    this.log(`${chalk.cyan("PROJECT INFO:")}`)
+    this.project_answers = await this.prompt(project_questions);
 
-    // DEFAULT CLOUD REGION SELECTION
-    if (this.answers.cloud === "azurerm") {
-      this.answers2 = await this.prompt([
-        {
-          type: 'list',
-          name: 'region',
-          message: 'Select default Azure Region:',
-          choices: [
-            {
-              name: 'Central US',
-              value: 'Central US',
-            }, {
-              name: 'East US',
-              value: 'East US'
-            }, {
-              name: 'East US 2',
-              value: 'East US 2'
-            }, {
-              name: 'North Central US',
-              value: 'North Central US'
-            }, {
-              name: 'South Central US',
-              value: 'South Central US'
-            }, {
-              name: 'West Central US',
-              value: 'West Central US'
-            }, {
-              name: 'WEST US',
-              value: 'WEST US'
-            }, {
-              name: 'WEST US 2',
-              value: 'WEST US 2'
-            }
-          ],
-          store: true
-        }
-      ])
-    } else {
-      this.answers2 = await this.prompt([
-        {
-          type: 'list',
-          name: 'region',
-          message: 'Select default AWS Region:',
-          choices: [
-            {
-              name: 'US East 2 (Ohio)',
-              value: 'us-east-2',
-            }, {
-              name: 'US East 1 (N. Virginia)',
-              value: 'us-east-1'
-            }, {
-              name: 'US West 1 (N. California)',
-              value: 'us-west-1'
-            }, {
-              name: 'US West 2 (Oregon)',
-              value: 'us-west-2'
-            }, {
-              name: 'Canada (Central)',
-              value: 'ca-central-1'
-            }
-          ],
-          store: true
-        }
-      ])      
+    // ASK CLOUD QUESTIONS
+    this.log(`${chalk.cyan("CLOUD PROVIDER")}`)
+    this.cloud_answers = await this.prompt(cloud_questions);
+    switch (this.cloud_answers.cloud) {
+      case 'azurerm':
+        this.cloud_answers2 = await this.prompt(azurerm_questions);
+        break;
+      case 'aws':
+        this.cloud_answers2 = await this.prompt(aws_questions);
+        break;
     }
 
-  }
+    // ASK ENVIRONMENT QUESTIONS
+    this.log(`${chalk.cyan("SUPPORTED ENVIRONMENTS:")}`)
+    this.env_answers = await this.prompt(env_questions);
 
+    // ASK TOOLING QUESTIONS
+    this.log(`${chalk.cyan("TOOL INSTALLATION/CONFIGURATION:")}`)
+    this.tool_answers = await this.prompt(tool_questions);
+
+    // ASK TAGGING QUESTIONS
+    this.log(`${chalk.cyan("TAGS:")}`)
+    this.tag_answers = await this.prompt(tag_questions);
+
+  }
 
   writing() {
 
@@ -213,12 +252,12 @@ module.exports = class extends Generator {
     var tf_backend;
     var cloud_provider_version;
     var backend_template;
-    if (this.answers.cloud === "azurerm") {
+    if (this.cloud_answers.cloud === "azurerm") {
       backend_template = "backends/azurerm-backend",
       cloud_provider_version = "2.50"
-      tf_backend =  this.answers.cloud
+      tf_backend =  this.cloud_answers.cloud
     }
-    if (this.answers.cloud === "aws") {
+    if (this.cloud_answers.cloud === "aws") {
       backend_template = "backends/aws-backend",
       cloud_provider_version = "3.0"
       tf_backend =  "s3"
@@ -229,7 +268,7 @@ module.exports = class extends Generator {
       this.templatePath('main.tf'),
       this.destinationPath('main.tf'),
       {
-        cloud_provider: this.answers.cloud,
+        cloud_provider: this.cloud_answers.cloud,
         cloud_provider_version: unescape(cloud_provider_version),
         tf_backend: tf_backend
       }
@@ -244,22 +283,22 @@ module.exports = class extends Generator {
       this.templatePath('variables.tf'),
       this.destinationPath('variables.tf'),
       {
-        name:    this.answers.name,
-        manager: this.answers.manager,
-        market:  this.answers.market,
-        project: this.answers.project,
-        owner:   this.answers.owner,
-        client:  this.answers.client
+        project: this.project_answers.project,
+        name:    this.tag_answers.name,
+        manager: this.tag_answers.manager,
+        market:  this.tag_answers.market,
+        owner:   this.tag_answers.owner,
+        client:  this.tag_answers.client
       }
     );
 
     // ATLANTIS PROJECT & WORKFLOW CONFIGURATION
-    if (this.answers.atlantis) {
+    if (this.tool_answers.atlantis) {
       this.fs.copyTpl(
         this.templatePath('atlantis.yaml'),
         this.destinationPath('atlantis.yaml'),
         {
-          stack: this.answers.stack
+          stack: this.project_answers.stack
         }
       );
       this.fs.copy(
@@ -277,24 +316,24 @@ module.exports = class extends Generator {
     this.fs.copyTpl(
       this.templatePath('README.md'),
       this.destinationPath('README.md'),
-      { overview: this.answers.overview }
+      { overview: this.project_answers.description }
     );
 
-    if (this.answers.precommit) {
+    if (this.tool_answers.precommit) {
       this.fs.copy(
         this.templatePath('.pre-commit-config.yaml'),
         this.destinationPath('.pre-commit-config.yaml')
       )
     };
 
-    for (var env of this.answers.environments) {
+    for (var env of this.env_answers.environments) {
       // TERRAFORM PARAMETERS
       this.fs.copyTpl(
         this.templatePath('parameters/env.tfvars'),
         this.destinationPath('parameters/<%= env %>.tfvars'),
         { 
           env: env,
-          region: this.answers2.region
+          region: this.cloud_answers2.region
         }
       );
       this.fs.copyTpl(
@@ -302,7 +341,7 @@ module.exports = class extends Generator {
         this.destinationPath('parameters/<%= env %>-<%= stack %>.tfvars'),
         { 
           env: env,
-          stack: this.answers.stack
+          stack: this.project_answers.stack
         }
       );
 
@@ -311,7 +350,7 @@ module.exports = class extends Generator {
         this.destinationPath('backends/<%= env %>-<%= stack %>-backend-key'),
         { 
           env: env,
-          stack: this.answers.stack
+          stack: this.project_answers.stack
         }
       );
 
@@ -329,12 +368,12 @@ module.exports = class extends Generator {
           this.templatePath(backend_template),
           this.destinationPath('backends/<%= env %>-backend'),
           { 
-            cloud: this.answers.cloud,
+            cloud: this.cloud_answers.cloud,
             env: env,
-            client: this.answers.client.toLowerCase(),
-            program: this.answers.program.toLowerCase(),
+            client: this.tag_answers.client.toLowerCase(),
+            program: this.project_answers.program.toLowerCase(),
             backend_env: backend_env[i],
-            backend_region: this.answers2.region
+            backend_region: this.cloud_answers2.region
           }
         )
       }
@@ -343,22 +382,26 @@ module.exports = class extends Generator {
   }
 
   install() {
-    if (this.answers.gitflow) {
-      this.log("\n\n*** INSTALLING GIT FLOW & INITIALIZING GIT REPO ***")
+    if (this.tool_answers.gitflow) {
+      this.log("\n\n")
+      this.log(`${chalk.cyan("INSTALLING GIT FLOW INITIALIZING GIT REPO")}`)
       if (os.platform() === "linux" ) { 
         this.log("*** Installing with apt-get ***")
         this.spawnCommandSync("sudo", ["apt-get", "update"])
         this.spawnCommandSync("sudo", ["apt-get", "install", "git-flow"])
       }
+      this.log(`${chalk.cyan("INITIALIZING GIT REPO with GIT FLOW")}`)
       this.spawnCommandSync("git", ["flow", "init"])
     } else {
+      this.log(`${chalk.cyan("INITIALIZING GIT REPO")}`)
       this.log("\n\n*** INITIALIZING GIT REPO ***")
       this.spawnCommandSync("git", ["init"])      
     }
     this.spawnCommandSync("git", ["add", "."])   
     this.spawnCommandSync("git", ["commit", "-am", "First Commit"])   
-    if (this.answers.precommit) {
-      this.log("\n\n*** INSTALLING PRE-COMMIT TOOLS ***")
+    if (this.tool_answers.precommit) {
+      this.log("\n\n");
+      this.log(`${chalk.cyan("INSTALLING PRE-COMMIT TOOLS")}`)
       if (os.platform() === "linux" ) { 
         this.log("*** Installing with apt-get ***")
         this.spawnCommandSync("sudo", ["apt-get", "install", "python3-pip"])
@@ -366,6 +409,7 @@ module.exports = class extends Generator {
       }
       this.spawnCommandSync("pip3", ["install", "pre-commit"])
       this.spawnCommandSync("pip3", ["install", "checkov"])
+      this.log(`${chalk.cyan("RUNNING PRE-COMMIT CHECKS")}`)
       this.spawnCommandSync("pre-commit", ["run", "-a"])
     }
   }
