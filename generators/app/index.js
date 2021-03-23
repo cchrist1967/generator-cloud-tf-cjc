@@ -1,4 +1,9 @@
 'use strict';
+const { snakeCase } = require('snake-case');
+const options = {
+  delimiter: "-"
+};
+
 var Generator = require('yeoman-generator');
 const { exec } = require('child_process');
 const os = require('os');
@@ -28,7 +33,7 @@ module.exports = class extends Generator {
       {
         type: "input",
         name: "stack",
-        message: "Your project stack.  Must be a string with no spaces.",
+        message: "Your project stack.",
         default: this.appname // Default to current folder name
       },
       {
@@ -40,13 +45,13 @@ module.exports = class extends Generator {
       {
         type: "input",
         name: "project",
-        message: "The name of this project (no spaces - e.g. cloud-project):",
+        message: "The name of this project:",
         store: true
       },
       {
         type: "input",
         name: "program",
-        message: "The name of the program to which this project belongs (no spaces - e.g. slalom-cloud):",
+        message: "The name of the program to which this project belongs:",
         store: true
       }
     ]
@@ -298,7 +303,7 @@ module.exports = class extends Generator {
         this.templatePath('atlantis.yaml'),
         this.destinationPath('atlantis.yaml'),
         {
-          stack: this.project_answers.stack
+          stack: snakeCase(this.project_answers.stack, options)
         }
       );
       this.fs.copy(
@@ -341,7 +346,7 @@ module.exports = class extends Generator {
         this.destinationPath('parameters/<%= env %>-<%= stack %>.tfvars'),
         { 
           env: env,
-          stack: this.project_answers.stack
+          stack: snakeCase(this.project_answers.stack, options)
         }
       );
 
@@ -350,7 +355,7 @@ module.exports = class extends Generator {
         this.destinationPath('backends/<%= env %>-<%= stack %>-backend-key'),
         { 
           env: env,
-          stack: this.project_answers.stack
+          stack: snakeCase(this.project_answers.stack, options)
         }
       );
 
@@ -370,8 +375,8 @@ module.exports = class extends Generator {
           { 
             cloud: this.cloud_answers.cloud,
             env: env,
-            client: this.tag_answers.client.toLowerCase(),
-            program: this.project_answers.program.toLowerCase(),
+            client: snakeCase(this.tag_answers.client, options),
+            program: snakeCase(this.project_answers.program, options),
             backend_env: backend_env[i],
             backend_region: this.cloud_answers2.region
           }
