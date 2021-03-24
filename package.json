@@ -11,6 +11,7 @@
   "author": "Charlie Christina",
   "dependencies": {
     "snake-case": "^3.0.4",
-    "yeoman-generator": "^3.2.0"
+    "yeoman-generator": "^3.2.0",
+    "yosay": "^2.0.2"
   }
 }

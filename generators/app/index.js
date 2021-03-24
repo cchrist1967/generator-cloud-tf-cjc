@@ -399,7 +399,6 @@ module.exports = class extends Generator {
       this.spawnCommandSync("git", ["flow", "init"])
     } else {
       this.log(`${chalk.cyan("INITIALIZING GIT REPO")}`)
-      this.log("\n\n*** INITIALIZING GIT REPO ***")
       this.spawnCommandSync("git", ["init"])      
     }
     this.spawnCommandSync("git", ["add", "."])   
