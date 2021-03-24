@@ -10,16 +10,18 @@ This Yeoman generator creates Terraform project scaffolding a cloud project
 ### Actions taken by the generator
 
 #### Prompting
-- Asks for values used for common cloud resource tags
-- Asks what environments will be supported
-    - choices include dev, prod, qa, sit, uat
-- Asks for target cloud provider
-- Asks for target cloud provider region
+- Asks for 
+    - project metadata values 
+    - target cloud provider
+    - target cloud provider region
+    - environments to be supported
+        - choices include dev, prod, qa, sit, uat (dev and prod selected by default)
+    - common cloud resource tags
 
 #### Writing
 - Creates Cloud Backend Configuration Files (opinionated backend naming convention)
 - Creates Parameter Files
-- Creates Skeleton Terraform main, vatiables, and output files
+- Creates Skeleton Terraform main.tf, variables.tf, and output.tf files
 
 #### Installing
 - initializes the local git repo (with either git or git flow)
@@ -69,6 +71,8 @@ project
 |   variables.tf
 ```
 
+**Note:** The "-backend-key" files contain the object name for the terraform state per environment.  It is in a separate backend config file in the event that you want to support the creation of multiple instances of the resources defined in main.tf in the same environment (but managed under different tfstate).  To do so, you would MANUALLY create additional -backend-key files with unique names.  You will also have to MANJUALLY modify your atlantis config to support these additional "projects"
+
 ## Usage
 
 <ol>
@@ -97,7 +101,7 @@ project
 
 - TBD
 
-
+**Note:** As of 3/24/21 this generator has only been tested on Ubuntu.  Testing on additional operating systems coming soon.
 
 ## Authors
 Charlie Christina
