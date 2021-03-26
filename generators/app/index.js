@@ -259,23 +259,28 @@ module.exports = class extends Generator {
     var backend_template;
     if (this.cloud_answers.cloud === "azurerm") {
       backend_template = "backends/azurerm-backend",
-      cloud_provider_version = "2.50"
-      tf_backend =  this.cloud_answers.cloud
+      cloud_provider_version = "2.50",
+      tf_backend =  this.cloud_answers.cloud,
+      main_template = "azurerm-main.tf"
+
     }
     if (this.cloud_answers.cloud === "aws") {
       backend_template = "backends/aws-backend",
-      cloud_provider_version = "3.0"
-      tf_backend =  "s3"
+      cloud_provider_version = "3.0",
+      tf_backend =  "s3",
+      main_template = "aws-main.tf"
+
     }
 
     // TERRAFORM TEMPLATES
     this.fs.copyTpl(
-      this.templatePath('main.tf'),
+      this.templatePath(main_template),
       this.destinationPath('main.tf'),
       {
         cloud_provider: this.cloud_answers.cloud,
         cloud_provider_version: unescape(cloud_provider_version),
-        tf_backend: tf_backend
+        tf_backend: tf_backend,
+        region = this.cloud_answers2.region
       }
     );
 
