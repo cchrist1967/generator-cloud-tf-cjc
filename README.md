@@ -1,7 +1,7 @@
 # Yeoman Generator - Cloud Terraform Scaffolding
 ## Overview
 
-This Yeoman generator creates Terraform project scaffolding a cloud project 
+This Yeoman generator creates Terraform project scaffolding for a cloud IaC project 
 
 ### Supported Cloud Providers
 - Azure
@@ -67,6 +67,7 @@ project
 |   .pre-commit-config.yaml (optional)
 |   atlantis.yaml (optional)
 |   main.tf
+|   outputs.tf
 |   README.md
 |   variables.tf
 ```
