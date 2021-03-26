@@ -257,6 +257,7 @@ module.exports = class extends Generator {
     var tf_backend;
     var cloud_provider_version;
     var backend_template;
+    var main_template;
     if (this.cloud_answers.cloud === "azurerm") {
       backend_template = "backends/azurerm-backend",
       cloud_provider_version = "2.50",
@@ -269,7 +270,6 @@ module.exports = class extends Generator {
       cloud_provider_version = "3.0",
       tf_backend =  "s3",
       main_template = "aws-main.tf"
-
     }
 
     // TERRAFORM TEMPLATES
