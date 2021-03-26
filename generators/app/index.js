@@ -25,6 +25,9 @@ module.exports = class extends Generator {
         )} generator!`
       )
     );
+    this.log(`${chalk.cyan("This generator creates project scaffolding for an AWS or Azure project to support one or more of the following environments:")}`);
+    this.log(`${chalk.cyan("Upper Environments: prod (default) and/or uat")}`);
+    this.log(`${chalk.cyan("Lower Environments: dev (default), sit and/or qa\n\n")}`);
 
     this.log(`Your Operating System: ${chalk.blue(os.platform(), os.type(), os.release())}`);
 
@@ -32,8 +35,14 @@ module.exports = class extends Generator {
     const project_questions = [
       {
         type: "input",
+        name: "project",
+        message: "The name of the project:",
+        store: true
+      },
+      {
+        type: "input",
         name: "stack",
-        message: "Your project stack.",
+        message: "The stack of resources that these templates will generate.",
         default: this.appname // Default to current folder name
       },
       {
@@ -42,18 +51,7 @@ module.exports = class extends Generator {
         message: "Please provide a description of this project stack.",
         store: true
       },
-      {
-        type: "input",
-        name: "project",
-        message: "The name of this project:",
-        store: true
-      },
-      {
-        type: "input",
-        name: "program",
-        message: "The name of the program to which this project belongs:",
-        store: true
-      }
+
     ]
 
     // ENVIRONMENT QUESTIONS
@@ -61,7 +59,7 @@ module.exports = class extends Generator {
       {
         type: 'checkbox',
         name: 'environments',
-        message: 'Select all environments you want to support:',
+        message: 'Select all environments you want to support with these templates:',
         choices: [
           {
             name: 'dev',
@@ -91,7 +89,7 @@ module.exports = class extends Generator {
       {
         type: 'list',
         name: 'cloud',
-        message: 'Select Cloud Provider:',
+        message: 'Select target Cloud Provider:',
         choices: [
           {
             name: 'Azure',
@@ -131,6 +129,23 @@ module.exports = class extends Generator {
       }      
     ]
 
+    const aws_upper_backend_questions = [
+      {
+        type: "input",
+        name: "upper_backend_bucket_name",
+        message: "Name of UPPER AWS Backend S3 Bucket (Upper backend-bucket-name output value)",
+        store: true     
+      }
+    ]
+    const aws_lower_backend_questions = [
+       {
+        type: "input",
+        name: "lower_backend_bucket_name",
+        message: "Name of LOWER AWS Backend S3 Bucket (Lower backend-bucket-name output value)",
+        store: true     
+      }
+    ]
+
     const azurerm_questions = [
       {
         type: 'list',
@@ -164,7 +179,48 @@ module.exports = class extends Generator {
           }
         ],
         store: true
-      }      
+      }
+    ]
+
+    const azurerm_upper_backend_questions = [
+      {
+        type: "input",
+        name: "upper_backend_resource_group_name",
+        message: "Name of UPPER Azure Backend Storage Resource Group (Upper backend-resource-group output value)",
+        store: true     
+      },
+      {
+        type: "input",
+        name: "upper_backend_storage_account_name",
+        message: "Name of UPPER Azure Backend Storage Account (Upper backend-storage-account output value)",
+        store: true     
+      },
+      {
+        type: "input",
+        name: "upper_backend_container_name",
+        message: "Name of UPPER Azure Backend Container (Upper backend-storage-container output value)",
+        store: true     
+      }
+    ]
+    const azurerm_lower_backend_questions = [
+      {
+        type: "input",
+        name: "lower_backend_resource_group_name",
+        message: "Name of LOWER Azure Backend Storage Resource Group (Lower backend-resource-group output value)",
+        store: true     
+      },
+      {
+        type: "input",
+        name: "lower_backend_storage_account_name",
+        message: "Name of LOWER Azure Backend Storage Account (Lower backend-storage-account output value)",
+        store: true     
+      },
+      {
+        type: "input",
+        name: "lower_backend_container_name",
+        message: "Name of LOWER Azure Backend Container (Lower backend-storage-container output value)",
+        store: true     
+      }
     ]
 
     // TOOLS/CONFIGURATION QUESTIONS
@@ -222,11 +278,11 @@ module.exports = class extends Generator {
     ]
 
     // ASK PROJECT QUESTIONS
-    this.log(`${chalk.cyan("PROJECT INFO:")}`)
+    this.log(`${chalk.cyan("\nPROJECT INFO:")}`)
     this.project_answers = await this.prompt(project_questions);
 
     // ASK CLOUD QUESTIONS
-    this.log(`${chalk.cyan("CLOUD PROVIDER")}`)
+    this.log(`${chalk.cyan("\nCLOUD PROVIDER & REGION")}`)
     this.cloud_answers = await this.prompt(cloud_questions);
     switch (this.cloud_answers.cloud) {
       case 'azurerm':
@@ -238,15 +294,62 @@ module.exports = class extends Generator {
     }
 
     // ASK ENVIRONMENT QUESTIONS
-    this.log(`${chalk.cyan("SUPPORTED ENVIRONMENTS:")}`)
+    this.log(`${chalk.cyan("\nSUPPORTED ENVIRONMENTS:")}`)
     this.env_answers = await this.prompt(env_questions);
 
+    this.backend_env = [];
+    this.lower_envs = ['dev', 'qa', 'sit']
+    this.upper_envs = ['uat', 'prod']
+    var env;
+    for (env of this.env_answers.environments) {
+      if (this.lower_envs.includes(env)) {
+        this.backend_env.push("lower");
+        break
+      };
+    }
+    for (env of this.env_answers.environments) {
+      if (this.upper_envs.includes(env)) {
+        this.backend_env.push("upper");
+        break
+      };
+    }
+    this.log("Backend ENVs: " + this.backend_env);
+
+    // ASK BACKEND QUESTIONS
+    this.log(`${chalk.cyan("\nTERRAFORM BACKENDs")}`)
+    this.log(`${chalk.yellow("If the cloud-tf-backend-cjc generator was used to create the backend, refer to the outputs of those templates for the following values")}`)
+    this.log(`${chalk.yellow("Otherwise, if you don't know or don't have your backend setup yet, just hit enter to leave the values blank for now.")}`)
+    this.log(`${chalk.yellow("You can re-run this generator in this directory once you have your backend setup.")}`)
+    if (this.backend_env.includes("lower")) {
+      this.log(`${chalk.cyan("\nLOWER ENVIRONMENT BACKEND: (e.g. "+this.lower_envs+")")}`)
+      switch (this.cloud_answers.cloud) {
+        case 'azurerm':
+          this.lower_backend_answers = await this.prompt(azurerm_lower_backend_questions);
+          break;
+        case 'aws':
+          this.lower_backend_answers = await this.prompt(aws_lower_backend_questions);
+          break;
+      }
+    }
+    if (this.backend_env.includes("upper")) {
+      this.log(`${chalk.cyan("\nUPPER ENVIRONMENT BACKEND: (e.g. "+this.upper_envs+")")}`)
+       switch (this.cloud_answers.cloud) {
+        case 'azurerm':
+          this.upper_backend_answers = await this.prompt(azurerm_upper_backend_questions);
+          break;
+        case 'aws':
+          this.upper_backend_answers = await this.prompt(aws_upper_backend_questions);
+          break;
+      }
+    }
+
+
     // ASK TOOLING QUESTIONS
-    this.log(`${chalk.cyan("TOOL INSTALLATION/CONFIGURATION:")}`)
+    this.log(`${chalk.cyan("\nTOOL INSTALLATION/CONFIGURATION:")}`)
     this.tool_answers = await this.prompt(tool_questions);
 
     // ASK TAGGING QUESTIONS
-    this.log(`${chalk.cyan("TAGS:")}`)
+    this.log(`${chalk.cyan("\nTAGS:")}`)
     this.tag_answers = await this.prompt(tag_questions);
 
   }
@@ -261,9 +364,8 @@ module.exports = class extends Generator {
     if (this.cloud_answers.cloud === "azurerm") {
       backend_template = "backends/azurerm-backend",
       cloud_provider_version = "2.50",
-      tf_backend =  this.cloud_answers.cloud,
+      tf_backend =  "azurerm",
       main_template = "azurerm-main.tf"
-
     }
     if (this.cloud_answers.cloud === "aws") {
       backend_template = "backends/aws-backend",
@@ -280,7 +382,7 @@ module.exports = class extends Generator {
         cloud_provider: this.cloud_answers.cloud,
         cloud_provider_version: unescape(cloud_provider_version),
         tf_backend: tf_backend,
-        region = this.cloud_answers2.region
+        region: this.cloud_answers2.region
       }
     );
 
@@ -365,24 +467,40 @@ module.exports = class extends Generator {
       );
 
       // TERRAFORM BACKENDS
-      var backend_env = [];
-      var i;
-      if (['dev', 'qa', 'sit'].includes(env)) {
-        backend_env.push("lower")
-      };
-      if (['uat', 'prod'].includes(env)) {
-        backend_env.push("upper")
-      };
-      for (i = 0; i < backend_env.length; i++) {
+      for (let i = 0; i < this.backend_env.length; i++) {
+        var backend_bucket_name = " ";
+        var backend_resource_group_name = " ";
+        var backend_storage_account_name = " ";
+        var backend_container_name = " ";
+        if (this.lower_envs.includes(env)) {
+          if (this.cloud_answers.cloud === "aws") {
+            backend_bucket_name = this.lower_backend_answers.lower_backend_bucket_name;
+          }
+          if (this.cloud_answers.cloud === "azurerm") {
+            backend_resource_group_name = this.lower_backend_answers.lower_backend_resource_group_name;
+            backend_storage_account_name = this.lower_backend_answers.lower_backend_storage_account_name;
+            backend_container_name = this.lower_backend_answers.lower_backend_container_name;
+          }
+        }
+        if (this.upper_envs.includes(env)) {
+          if (this.cloud_answers.cloud === "aws") {
+            backend_bucket_name = this.upper_backend_answers.upper_backend_bucket_name
+          }
+          if (this.cloud_answers.cloud === "azurerm") {
+            backend_resource_group_name = this.upper_backend_answers.upper_backend_resource_group_name;
+            backend_storage_account_name = this.upper_backend_answers.upper_backend_storage_account_name;
+            backend_container_name = this.upper_backend_answers.upper_backend_container_name;
+          }
+        }
         this.fs.copyTpl(
           this.templatePath(backend_template),
           this.destinationPath('backends/<%= env %>-backend'),
           { 
-            cloud: this.cloud_answers.cloud,
             env: env,
-            client: snakeCase(this.tag_answers.client, options),
-            program: snakeCase(this.project_answers.program, options),
-            backend_env: backend_env[i],
+            backend_bucket_name: backend_bucket_name,
+            backend_resource_group_name: backend_resource_group_name,
+            backend_storage_account_name: backend_storage_account_name,
+            backend_container_name: backend_container_name,
             backend_region: this.cloud_answers2.region
           }
         )
@@ -394,23 +512,23 @@ module.exports = class extends Generator {
   install() {
     if (this.tool_answers.gitflow) {
       this.log("\n\n")
-      this.log(`${chalk.cyan("INSTALLING GIT FLOW INITIALIZING GIT REPO")}`)
+      this.log(`${chalk.cyan("INSTALLING GIT FLOW")}`)
       if (os.platform() === "linux" ) { 
         this.log("*** Installing with apt-get ***")
         this.spawnCommandSync("sudo", ["apt-get", "update"])
         this.spawnCommandSync("sudo", ["apt-get", "install", "git-flow"])
       }
-      this.log(`${chalk.cyan("INITIALIZING GIT REPO with GIT FLOW")}`)
+      this.log(`${chalk.cyan("\nINITIALIZING GIT REPO with GIT FLOW")}`)
       this.spawnCommandSync("git", ["flow", "init"])
     } else {
-      this.log(`${chalk.cyan("INITIALIZING GIT REPO")}`)
+      this.log(`${chalk.cyan("\nINITIALIZING GIT REPO")}`)
       this.spawnCommandSync("git", ["init"])      
     }
     this.spawnCommandSync("git", ["add", "."])   
     this.spawnCommandSync("git", ["commit", "-am", "First Commit"])   
     if (this.tool_answers.precommit) {
       this.log("\n\n");
-      this.log(`${chalk.cyan("INSTALLING PRE-COMMIT TOOLS")}`)
+      this.log(`${chalk.cyan("\nINSTALLING PRE-COMMIT TOOLS")}`)
       if (os.platform() === "linux" ) { 
         this.log("*** Installing with apt-get ***")
         this.spawnCommandSync("sudo", ["apt-get", "install", "python3-pip"])
@@ -418,7 +536,7 @@ module.exports = class extends Generator {
       }
       this.spawnCommandSync("pip3", ["install", "pre-commit"])
       this.spawnCommandSync("pip3", ["install", "checkov"])
-      this.log(`${chalk.cyan("RUNNING PRE-COMMIT CHECKS")}`)
+      this.log(`${chalk.cyan("\nRUNNING PRE-COMMIT CHECKS")}`)
       this.spawnCommandSync("pre-commit", ["run", "-a"])
     }
   }

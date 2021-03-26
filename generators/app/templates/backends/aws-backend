@@ -1,2 +1,2 @@
-bucket  = "<%= client %>-<%= program %>-<%= backend_region %>-<%= backend_env %>-envs-tf-backend"
+bucket  = "<%= backend_bucket_name %>"
 region = "<%= backend_region %>"
