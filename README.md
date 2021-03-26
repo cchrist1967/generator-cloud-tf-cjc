@@ -3,7 +3,7 @@
 
 This Yeoman generator creates Terraform project scaffolding for a cloud IaC project 
 
-![Project Image](TerraformProjectScaffolding.png)
+![Project Image](https://github.com/cchrist1967/generator-cloud-tf-cjc/blob/main/TerraformProjectScaffolding.png)
 
 ### Supported Cloud Providers
 - Azure
