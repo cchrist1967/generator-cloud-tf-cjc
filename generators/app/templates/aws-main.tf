@@ -1,6 +1,6 @@
 # PROVIDERS
 provider "<%= cloud_provider %>" {
-  region = "<%= region %>"
+  region  = "<%= region %>"
   version = "~> <%= cloud_provider_version %>"
 }
 
